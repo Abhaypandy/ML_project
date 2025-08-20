@@ -1,41 +1,58 @@
 import os
 import sys
 
+import numpy as np 
 import pandas as pd
-import numpy as np
 import dill
+import pickle
+from sklearn.metrics import r2_score
+from sklearn.model_selection import GridSearchCV
 
 from src.exception import CustomException
 
-# def error_message_detail(error,error_detail):
-#     _,_,exc_tb=error_detail.exc_info()
-#     if exc_tb is not None:
-#         file_name=exc_tb.tb_frame.f_code.co_filename
-#         line_number=exc_tb.tb_lineno
-#     else:
-#         file_name="Unknown"
-#         line_number="Unknown"
-#     error_message="error occured in python scripit name [{0}] line number[{1}]".format(
-#         file_name,line_number,str(error)
-#     )
-#     return error_message
-
-# class CustomException(Exception):
-#     def __init__(self,error_mesaage,error_detail):
-#         super().__init__(error_mesaage)
-#         self.error_message=error_message_detail(error_mesaage,error_detail=error_detail)
-#     def __str__(self):
-#         return self.error_message
-
-
-def save_object(file_path,obj):
+def save_object(file_path, obj):
     try:
-        dir_path=os.path.dirname(file_path)
-        
+        dir_path = os.path.dirname(file_path)
+
         os.makedirs(dir_path, exist_ok=True)
-        
-        with open(file_path,"wb") as file_obj:
-            dill.dump(obj,file_obj)
-            
+
+        with open(file_path, "wb") as file_obj:
+            pickle.dump(obj, file_obj)
+
     except Exception as e:
-        raise CustomException(e,sys)
+        raise CustomException(e, sys)
+    
+def evaluate_models(X_train, y_train, X_test, y_test, models):
+    try:
+        report = {}
+
+        for name, model in models.items():
+            model.fit(X_train, y_train)
+
+            y_train_pred = model.predict(X_train)
+            y_test_pred = model.predict(X_test)
+
+            train_score = r2_score(y_train, y_train_pred)
+            test_score = r2_score(y_test, y_test_pred)
+
+            report[name] = {
+                "train_score": train_score,
+                "test_score": test_score,
+            }
+
+            # print(f"{name}: Train R2={train_score:.4f}, Test R2={test_score:.4f}")
+            
+        return report
+
+    except Exception as e:
+        raise CustomException(e, sys)
+
+    
+# def load_object(file_path):
+#     try:
+#         with open(file_path, "rb") as file_obj:
+#             return pickle.load(file_obj)
+
+#     except Exception as e:
+#         raise CustomException(e, sys)
+    
